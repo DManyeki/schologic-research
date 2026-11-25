@@ -1,0 +1,6 @@
+{
+  "name": "VeritasHE — Higher-Ed Verification Console",
+  "description": "Research operations console for triaging and resolving higher-education institutional profiles using live web search, official university catalogs, and accreditation registries.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

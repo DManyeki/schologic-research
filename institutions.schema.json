@@ -1,0 +1,1291 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schologic.local/schemas/public.institutions.schema.json",
+  "title": "public.institutions",
+  "description": "Exact JSON Schema (Draft 2020-12) definition for all 70 columns of the PostgreSQL public.institutions table, derived from live information_schema/pg_constraint metadata and schologic validator/completeness rules.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "type",
+    "research_status",
+    "created_at",
+    "updated_at",
+    "sync_status",
+    "conflict",
+    "verification_status",
+    "attempt_count",
+    "profile_level",
+    "research_pass",
+    "verification_pass",
+    "conflict_pass",
+    "verified_fields_jsonb",
+    "changelog_jsonb",
+    "target_fields",
+    "social_media",
+    "corpus_sources",
+    "institution_sources",
+    "other_sources",
+    "geo"
+  ],
+  "$defs": {
+    "kenyan_county": {
+      "type": "string",
+      "enum": [
+        "Baringo County",
+        "Bomet County",
+        "Bungoma County",
+        "Busia County",
+        "Elgeyo Marakwet County",
+        "Embu County",
+        "Garissa County",
+        "Homa Bay County",
+        "Isiolo County",
+        "Kajiado County",
+        "Kakamega County",
+        "Kericho County",
+        "Kiambu County",
+        "Kilifi County",
+        "Kirinyaga County",
+        "Kisii County",
+        "Kisumu County",
+        "Kitui County",
+        "Kwale County",
+        "Laikipia County",
+        "Lamu County",
+        "Machakos County",
+        "Makueni County",
+        "Mandera County",
+        "Marsabit County",
+        "Meru County",
+        "Migori County",
+        "Mombasa County",
+        "Murang'a County",
+        "Nairobi County",
+        "Nakuru County",
+        "Nandi County",
+        "Narok County",
+        "Nyamira County",
+        "Nyandarua County",
+        "Nyeri County",
+        "Samburu County",
+        "Siaya County",
+        "Taita Taveta County",
+        "Tana River County",
+        "Tharaka Nithi County",
+        "Trans Nzoia County",
+        "Turkana County",
+        "Uasin Gishu County",
+        "Vihiga County",
+        "Wajir County",
+        "West Pokot County"
+      ],
+      "description": "One of the 47 constitutional Counties of Kenya formatted as '<Name> County'."
+    },
+    "kenyan_region": {
+      "type": "string",
+      "enum": [
+        "Central",
+        "Coast",
+        "Eastern",
+        "Nairobi",
+        "North Eastern",
+        "Nyanza",
+        "Rift Valley",
+        "Western"
+      ],
+      "description": "One of the 8 constitutional regions of Kenya."
+    },
+    "learning_mode_tuple": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "prefixItems": [
+        {
+          "type": "string",
+          "enum": ["verified", "implied", "none"]
+        },
+        {
+          "type": "string",
+          "minLength": 1,
+          "description": "Reasoning string; when status is 'verified', must contain a valid URL."
+        }
+      ],
+      "items": false
+    },
+    "has_teaching_courses_tuple": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Tuple beginning with a boolean flag, followed by an array of course names or explanatory strings.",
+      "oneOf": [
+        {
+          "minItems": 2,
+          "maxItems": 2,
+          "prefixItems": [
+            { "type": "boolean" },
+            { "type": "array", "items": { "type": "string" } }
+          ],
+          "items": false
+        },
+        {
+          "minItems": 1,
+          "prefixItems": [
+            { "type": "boolean" }
+          ],
+          "items": { "type": "string" }
+        }
+      ]
+    },
+    "course_item": {
+      "type": "object",
+      "required": ["name", "level", "exam_body"],
+      "additionalProperties": true,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "level": {
+          "type": "string",
+          "enum": [
+            "Certificate",
+            "Diploma",
+            "Higher Diploma",
+            "Degree",
+            "Masters",
+            "PhD",
+            "Artisan",
+            "Undergraduate",
+            "Postgraduate"
+          ]
+        },
+        "exam_body": {
+          "type": "string",
+          "minLength": 1,
+          "description": "External exam body (e.g. KNEC, NITA, TVET CDACC, KASNEB, NCK) or literal 'internal' for university/senate-examined courses."
+        }
+      }
+    },
+    "personal_contact_item": {
+      "type": "object",
+      "required": ["contact_name", "job_title"],
+      "anyOf": [
+        { "required": ["email"] },
+        { "required": ["phone"] }
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "contact_name": { "type": "string", "minLength": 1 },
+        "job_title": { "type": "string", "minLength": 1 },
+        "email": { "type": ["string", "null"] },
+        "phone": { "type": ["string", "null"] },
+        "source": { "type": ["string", "null"], "format": "uri" },
+        "profile_summary": { "type": ["string", "null"] }
+      }
+    },
+    "research_data_4root": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["basic_info", "institution_profile", "context", "personal_contacts"],
+      "properties": {
+        "basic_info": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["location"],
+          "properties": {
+            "name": { "type": ["string", "null"] },
+            "website": { "type": ["string", "null"] },
+            "email": { "type": ["string", "null"] },
+            "phone": { "type": ["string", "null"], "pattern": "^[^*]*$" },
+            "logo_url": { "type": ["string", "null"] },
+            "location": {
+              "type": "object",
+              "required": ["county", "region"],
+              "additionalProperties": true,
+              "properties": {
+                "location": { "type": ["string", "null"] },
+                "town": { "type": ["string", "null"] },
+                "county": { "$ref": "#/$defs/kenyan_county" },
+                "region": { "$ref": "#/$defs/kenyan_region" }
+              }
+            },
+            "sources": { "type": "object", "additionalProperties": true }
+          }
+        },
+        "institution_profile": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["ownership", "type", "has_elearning", "has_distance_learning"],
+          "properties": {
+            "ownership": { "type": "string", "enum": ["public", "private"] },
+            "type": { "type": "string", "enum": ["UNIVERSITY", "TVET", "KMTC"] },
+            "category": { "type": ["string", "null"], "enum": ["NP", "TVC", "VTC", null] },
+            "estimated_student_count": { "type": ["integer", "null"], "minimum": 0 },
+            "has_elearning": { "$ref": "#/$defs/learning_mode_tuple" },
+            "has_distance_learning": { "$ref": "#/$defs/learning_mode_tuple" },
+            "has_teaching_courses": {
+              "oneOf": [
+                { "$ref": "#/$defs/has_teaching_courses_tuple" },
+                { "type": "null" }
+              ]
+            },
+            "campuses": { "type": ["array", "null"], "items": { "type": "string" } },
+            "affiliation": { "type": ["array", "null"], "items": { "type": "string" } },
+            "sources": { "type": "object", "additionalProperties": true }
+          }
+        },
+        "context": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["about", "description", "courses"],
+          "properties": {
+            "about": { "type": "string", "minLength": 1, "description": "At least 25 words." },
+            "description": { "type": "string", "minLength": 1, "description": "At least 4 full sentences." },
+            "facilities": {
+              "type": ["array", "null"],
+              "items": { "type": "string", "maxLength": 160 }
+            },
+            "accreditations": {
+              "type": ["array", "null"],
+              "items": { "type": "string", "maxLength": 320 }
+            },
+            "courses": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "$ref": "#/$defs/course_item" }
+            }
+          }
+        },
+        "personal_contacts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/personal_contact_item" }
+        }
+      }
+    },
+    "conflict_item": {
+      "type": "object",
+      "required": ["field_path"],
+      "additionalProperties": true,
+      "properties": {
+        "field_path": { "type": "string" },
+        "stored_value": {},
+        "proposed_value": {},
+        "settled": { "type": "boolean" },
+        "decision": {
+          "type": ["string", "null"],
+          "enum": ["stored_wins", "new_wins", "merge", "owner_review", "re_research", null]
+        },
+        "rationale": { "type": ["string", "null"] },
+        "decided_by": { "type": ["string", "null"] },
+        "decided_at": { "type": ["string", "null"], "format": "date-time" },
+        "settled_at": { "type": ["string", "null"], "format": "date-time" },
+        "source_urls": {
+          "type": "array",
+          "items": { "type": "string", "format": "uri" }
+        },
+        "fact_check_url": { "type": ["string", "null"], "format": "uri" },
+        "locked_by_verification": { "type": "boolean" }
+      }
+    },
+    "verified_field_entry": {
+      "type": "object",
+      "required": ["status"],
+      "additionalProperties": true,
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["confirmed", "contradicted", "not_found", "unverified"]
+        },
+        "verdict": { "type": ["string", "null"] },
+        "rationale": { "type": ["string", "null"] },
+        "url_checked": { "type": ["string", "null"], "format": "uri" },
+        "source_url": { "type": ["string", "null"], "format": "uri" },
+        "evidence_key": { "type": ["string", "null"] },
+        "run_id": { "type": ["string", "null"] },
+        "verified_at": { "type": ["string", "null"], "format": "date-time" },
+        "contradicting_value": {},
+        "contradicting_source_url": { "type": ["string", "null"], "format": "uri" },
+        "conflict": { "type": ["object", "null"], "additionalProperties": true }
+      }
+    },
+    "changelog_entry": {
+      "type": "object",
+      "required": ["field", "action", "timestamp"],
+      "additionalProperties": true,
+      "properties": {
+        "field": { "type": "string" },
+        "action": { "type": "string" },
+        "old_val": {},
+        "new_val": {},
+        "rationale": { "type": ["string", "null"] },
+        "decided_by": { "type": ["string", "null"] },
+        "source_urls": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
+    },
+    "social_media_item": {
+      "type": "object",
+      "required": ["url"],
+      "additionalProperties": true,
+      "properties": {
+        "platform": {
+          "type": "string",
+          "enum": [
+            "facebook", "instagram", "x", "linkedin", "youtube", "tiktok", "whatsapp", "other",
+            "Facebook", "Instagram", "X", "LinkedIn", "YouTube", "TikTok", "WhatsApp", "Other"
+          ]
+        },
+        "url": { "type": "string", "format": "uri" },
+        "handle": { "type": ["string", "null"] },
+        "ownership": {
+          "type": ["string", "null"],
+          "enum": ["institution", "affiliate", "parent", "sister", "community", null]
+        },
+        "verified": { "type": ["boolean", "null"] },
+        "source_url": { "type": ["string", "null"], "format": "uri" },
+        "notes": { "type": ["string", "null"] },
+        "observed_at": { "type": ["string", "null"] },
+        "lane": { "type": ["string", "null"] }
+      }
+    },
+    "corpus_source_item": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "corpus": {
+          "type": "string",
+          "enum": ["tveta", "cue", "kuccps", "kmtc", "nita", "cdacc", "other"]
+        },
+        "reg_no": { "type": ["string", "null"] },
+        "record_ref": { "type": ["string", "null"] },
+        "note": { "type": ["string", "null"] },
+        "observed_at": { "type": ["string", "null"] },
+        "source_url": { "type": ["string", "null"], "format": "uri" }
+      }
+    },
+    "institution_source_item": {
+      "type": "object",
+      "required": ["url"],
+      "additionalProperties": true,
+      "properties": {
+        "url": { "type": "string", "format": "uri" },
+        "owner": {
+          "type": ["string", "null"],
+          "enum": ["own", "parent", "affiliate", "sister", null]
+        },
+        "relationship_text": { "type": ["string", "null"] },
+        "source_url": { "type": ["string", "null"], "format": "uri" },
+        "observed_at": { "type": ["string", "null"] }
+      }
+    },
+    "other_source_item": {
+      "type": "object",
+      "required": ["url"],
+      "additionalProperties": true,
+      "properties": {
+        "url": { "type": "string", "format": "uri" },
+        "publisher": { "type": ["string", "null"] },
+        "kind": {
+          "type": ["string", "null"],
+          "enum": ["editorial", "directory", "archive", "social_community", "other", null]
+        },
+        "independent": { "type": ["boolean", "null"] },
+        "note": { "type": ["string", "null"] },
+        "source_url": { "type": ["string", "null"], "format": "uri" },
+        "observed_at": { "type": ["string", "null"] }
+      }
+    },
+    "geo_object": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "maps_url": { "type": ["string", "null"], "format": "uri" },
+        "place_id": { "type": ["string", "null"] },
+        "plus_code": { "type": ["string", "null"] },
+        "lat": { "type": ["number", "null"] },
+        "lng": { "type": ["number", "null"] },
+        "latitude": { "type": ["number", "null"] },
+        "longitude": { "type": ["number", "null"] },
+        "formatted_address": { "type": ["string", "null"] },
+        "business_status": {
+          "type": ["string", "null"],
+          "enum": ["operational", "closed_temporarily", "closed_permanently", "unknown", null]
+        },
+        "source_url": { "type": ["string", "null"], "format": "uri" },
+        "observed_at": { "type": ["string", "null"] },
+        "lane": {
+          "type": ["string", "null"],
+          "enum": ["research", "verification", "sync", "system", null]
+        }
+      }
+    }
+  },
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "x-pg": {
+        "ordinal_position": 1,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": false,
+        "default": null,
+        "constraints": ["PRIMARY KEY (id)", "NOT NULL"]
+      }
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "x-pg": {
+        "ordinal_position": 2,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": false,
+        "default": null,
+        "constraints": ["NOT NULL"]
+      }
+    },
+    "type": {
+      "type": "string",
+      "enum": ["UNIVERSITY", "TVET", "KMTC"],
+      "x-pg": {
+        "ordinal_position": 3,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": false,
+        "default": null,
+        "constraints": ["CHECK (type = ANY (ARRAY['UNIVERSITY'::text, 'TVET'::text, 'KMTC'::text]))", "NOT NULL"]
+      }
+    },
+    "category": {
+      "type": ["string", "null"],
+      "enum": ["NP", "TVC", "VTC", null],
+      "x-pg": {
+        "ordinal_position": 4,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": true,
+        "default": null,
+        "constraints": ["CHECK (category IS NULL OR category = ANY (ARRAY['NP'::text, 'TVC'::text, 'VTC'::text]))"]
+      }
+    },
+    "ownership": {
+      "type": ["string", "null"],
+      "enum": ["public", "private", null],
+      "x-pg": {
+        "ordinal_position": 5,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": true,
+        "default": null,
+        "constraints": ["CHECK (ownership IS NULL OR ownership = ANY (ARRAY['public'::text, 'private'::text]))"]
+      }
+    },
+    "operational_status": {
+      "type": ["string", "null"],
+      "default": "active",
+      "x-pg": {
+        "ordinal_position": 6,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": true,
+        "default": "'active'::text"
+      }
+    },
+    "website": {
+      "type": ["string", "null"],
+      "format": "uri",
+      "x-pg": {
+        "ordinal_position": 7,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "email": {
+      "type": ["string", "null"],
+      "format": "email",
+      "x-pg": {
+        "ordinal_position": 8,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "phone": {
+      "type": ["string", "null"],
+      "pattern": "^[^*]*$",
+      "x-pg": {
+        "ordinal_position": 9,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "logo_url": {
+      "type": ["string", "null"],
+      "format": "uri",
+      "x-pg": {
+        "ordinal_position": 10,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "location": {
+      "type": ["string", "null"],
+      "x-pg": {
+        "ordinal_position": 11,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": true,
+        "default": null,
+        "constraints": ["CHECK (location IS NULL OR county IS NULL OR lower(btrim(location)) <> lower(btrim(county))) NOT VALID"]
+      }
+    },
+    "town": {
+      "type": ["string", "null"],
+      "x-pg": {
+        "ordinal_position": 12,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "county": {
+      "oneOf": [
+        { "$ref": "#/$defs/kenyan_county" },
+        { "type": "null" }
+      ],
+      "x-pg": {
+        "ordinal_position": 13,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": true,
+        "default": null,
+        "constraints": ["CHECK (county IS NULL OR county = ANY (<47 canonical Kenyan Counties>))"]
+      }
+    },
+    "region": {
+      "oneOf": [
+        { "$ref": "#/$defs/kenyan_region" },
+        { "type": "null" }
+      ],
+      "x-pg": {
+        "ordinal_position": 14,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": true,
+        "default": null,
+        "constraints": ["CHECK (region IS NULL OR region = ANY (ARRAY['Central', 'Coast', 'Eastern', 'Nairobi', 'North Eastern', 'Nyanza', 'Rift Valley', 'Western']))"]
+      }
+    },
+    "research_data": {
+      "oneOf": [
+        { "$ref": "#/$defs/research_data_4root" },
+        { "type": "null" }
+      ],
+      "x-pg": {
+        "ordinal_position": 15,
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "validation": {
+      "type": ["object", "null"],
+      "additionalProperties": true,
+      "properties": {
+        "import": { "type": "object", "additionalProperties": true },
+        "field_verdicts": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/verified_field_entry" }
+        }
+      },
+      "x-pg": {
+        "ordinal_position": 16,
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "sources": {
+      "type": ["object", "null"],
+      "additionalProperties": {
+        "oneOf": [
+          { "type": "array", "items": { "type": "string", "format": "uri" } },
+          { "type": "string", "format": "uri" }
+        ]
+      },
+      "x-pg": {
+        "ordinal_position": 17,
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "research_score": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "maximum": 100,
+      "x-pg": {
+        "ordinal_position": 18,
+        "data_type": "integer",
+        "udt_name": "int4",
+        "nullable": true,
+        "default": null,
+        "constraints": ["CHECK (research_score IS NULL OR research_score >= 0 AND research_score <= 100)"]
+      }
+    },
+    "research_status": {
+      "type": "string",
+      "enum": ["not_researched", "researched", "pending_review", "failed"],
+      "default": "not_researched",
+      "x-pg": {
+        "ordinal_position": 19,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": false,
+        "default": "'not_researched'::text",
+        "constraints": ["CHECK (research_status = ANY (ARRAY['not_researched'::text, 'researched'::text, 'pending_review'::text, 'failed'::text]))", "NOT NULL"]
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "x-pg": {
+        "ordinal_position": 20,
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "nullable": false,
+        "default": "now()",
+        "constraints": ["NOT NULL"]
+      }
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "x-pg": {
+        "ordinal_position": 21,
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "nullable": false,
+        "default": "now()",
+        "constraints": ["NOT NULL"]
+      }
+    },
+    "sync_status": {
+      "type": "string",
+      "enum": ["not_applied", "pending", "applied", "held", "conflict", "applied_with_gaps"],
+      "default": "not_applied",
+      "x-pg": {
+        "ordinal_position": 22,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": false,
+        "default": "'not_applied'::text",
+        "constraints": ["CHECK (sync_status = ANY (ARRAY['not_applied'::text, 'pending'::text, 'applied'::text, 'held'::text, 'conflict'::text, 'applied_with_gaps'::text]))", "NOT NULL"]
+      }
+    },
+    "sync_updated_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "x-pg": {
+        "ordinal_position": 23,
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "sync_run_id": {
+      "type": ["string", "null"],
+      "x-pg": {
+        "ordinal_position": 24,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "conflict": {
+      "type": "array",
+      "default": [],
+      "items": { "$ref": "#/$defs/conflict_item" },
+      "x-pg": {
+        "ordinal_position": 25,
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "nullable": false,
+        "default": "'[]'::jsonb",
+        "constraints": ["CHECK (jsonb_typeof(conflict) = 'array'::text)", "NOT NULL"]
+      }
+    },
+    "verification_status": {
+      "type": "string",
+      "enum": ["unverified", "verified", "flagged"],
+      "default": "unverified",
+      "x-pg": {
+        "ordinal_position": 26,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": false,
+        "default": "'unverified'::text",
+        "constraints": ["CHECK (verification_status = ANY (ARRAY['unverified'::text, 'verified'::text, 'flagged'::text]))", "NOT NULL"]
+      }
+    },
+    "verified_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "x-pg": {
+        "ordinal_position": 27,
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "verified_by_run": {
+      "type": ["string", "null"],
+      "x-pg": {
+        "ordinal_position": 28,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "claimed_by": {
+      "type": ["string", "null"],
+      "x-pg": {
+        "ordinal_position": 29,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "claimed_until": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "x-pg": {
+        "ordinal_position": 30,
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "claim_queue": {
+      "type": ["string", "null"],
+      "enum": ["research", "sync", "verification", null],
+      "x-pg": {
+        "ordinal_position": 31,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": true,
+        "default": null,
+        "constraints": ["CHECK (claim_queue IS NULL OR claim_queue = ANY (ARRAY['research'::text, 'sync'::text, 'verification'::text]))"]
+      }
+    },
+    "attempt_count": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "x-pg": {
+        "ordinal_position": 32,
+        "data_type": "integer",
+        "udt_name": "int4",
+        "nullable": false,
+        "default": "0",
+        "constraints": ["NOT NULL"]
+      }
+    },
+    "last_error": {
+      "type": ["string", "null"],
+      "x-pg": {
+        "ordinal_position": 33,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "last_writer": {
+      "type": ["string", "null"],
+      "x-pg": {
+        "ordinal_position": 34,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "duplicate_of": {
+      "type": ["string", "null"],
+      "x-pg": {
+        "ordinal_position": 35,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": true,
+        "default": null,
+        "constraints": ["FOREIGN KEY (duplicate_of) REFERENCES institutions(id) ON DELETE SET NULL", "CHECK (duplicate_of IS NULL OR duplicate_of <> id)"]
+      }
+    },
+    "registration_status": {
+      "type": ["string", "null"],
+      "enum": ["Registered and Licensed", "Registered Only", "Expired", "Suspended", "Unknown", null],
+      "x-pg": {
+        "ordinal_position": 36,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": true,
+        "default": null,
+        "constraints": ["CHECK (registration_status IS NULL OR registration_status = ANY (ARRAY['Registered and Licensed'::text, 'Registered Only'::text, 'Expired'::text, 'Suspended'::text, 'Unknown'::text]))"],
+        "pg_description": "Regulator licence status exactly as published: Registered and Licensed | Registered Only | Expired | Suspended | Unknown. NULL = not yet captured."
+      }
+    },
+    "profile_level": {
+      "type": "string",
+      "enum": ["none", "register", "enriched"],
+      "default": "none",
+      "x-pg": {
+        "ordinal_position": 37,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": false,
+        "default": "'none'::text",
+        "constraints": ["CHECK (profile_level = ANY (ARRAY['none'::text, 'register'::text, 'enriched'::text]))", "NOT NULL"]
+      }
+    },
+    "research_note": {
+      "type": ["string", "null"],
+      "x-pg": {
+        "ordinal_position": 38,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "research_queued_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "x-pg": {
+        "ordinal_position": 39,
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "research_origin": {
+      "type": ["string", "null"],
+      "enum": ["re_research", "new_intake", "verification", "conflict", null],
+      "x-pg": {
+        "ordinal_position": 40,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "research_pass": {
+      "type": "integer",
+      "maximum": 2,
+      "default": 0,
+      "x-pg": {
+        "ordinal_position": 41,
+        "data_type": "integer",
+        "udt_name": "int4",
+        "nullable": false,
+        "default": "0",
+        "constraints": ["CHECK (research_pass <= 2)", "NOT NULL"]
+      }
+    },
+    "verification_pass": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "x-pg": {
+        "ordinal_position": 42,
+        "data_type": "integer",
+        "udt_name": "int4",
+        "nullable": false,
+        "default": "0",
+        "constraints": ["NOT NULL"]
+      }
+    },
+    "conflict_pass": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 0,
+      "x-pg": {
+        "ordinal_position": 43,
+        "data_type": "integer",
+        "udt_name": "int4",
+        "nullable": false,
+        "default": "0",
+        "constraints": ["CHECK (conflict_pass >= 0 AND conflict_pass <= 1)", "NOT NULL"]
+      }
+    },
+    "verification_basis": {
+      "type": ["string", "null"],
+      "enum": ["multi_source", "corpus_only", null],
+      "x-pg": {
+        "ordinal_position": 44,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": true,
+        "default": null,
+        "constraints": ["CHECK (verification_basis IS NULL OR verification_basis = ANY (ARRAY['multi_source'::text, 'corpus_only'::text]))"]
+      }
+    },
+    "estimated_student_count": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "x-pg": {
+        "ordinal_position": 45,
+        "data_type": "integer",
+        "udt_name": "int4",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "has_elearning": {
+      "oneOf": [
+        { "$ref": "#/$defs/learning_mode_tuple" },
+        { "type": "null" }
+      ],
+      "x-pg": {
+        "ordinal_position": 46,
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "has_distance_learning": {
+      "oneOf": [
+        { "$ref": "#/$defs/learning_mode_tuple" },
+        { "type": "null" }
+      ],
+      "x-pg": {
+        "ordinal_position": 47,
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "has_teaching_courses": {
+      "oneOf": [
+        { "$ref": "#/$defs/has_teaching_courses_tuple" },
+        { "type": "null" }
+      ],
+      "x-pg": {
+        "ordinal_position": 48,
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "campuses": {
+      "type": ["array", "null"],
+      "items": { "type": "string" },
+      "x-pg": {
+        "ordinal_position": 49,
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "affiliation": {
+      "type": ["array", "null"],
+      "items": { "type": "string" },
+      "x-pg": {
+        "ordinal_position": 50,
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "about": {
+      "type": ["string", "null"],
+      "x-pg": {
+        "ordinal_position": 51,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "description": {
+      "type": ["string", "null"],
+      "x-pg": {
+        "ordinal_position": 52,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "facilities": {
+      "type": ["array", "null"],
+      "items": { "type": "string", "maxLength": 160 },
+      "x-pg": {
+        "ordinal_position": 53,
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "accreditations": {
+      "type": ["array", "null"],
+      "items": { "type": "string", "maxLength": 320 },
+      "x-pg": {
+        "ordinal_position": 54,
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "courses": {
+      "type": ["array", "null"],
+      "items": { "$ref": "#/$defs/course_item" },
+      "x-pg": {
+        "ordinal_position": 55,
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "personal_contacts": {
+      "type": ["array", "null"],
+      "items": { "$ref": "#/$defs/personal_contact_item" },
+      "x-pg": {
+        "ordinal_position": 56,
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "health_score": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "maximum": 100,
+      "default": 0,
+      "x-pg": {
+        "ordinal_position": 57,
+        "data_type": "integer",
+        "udt_name": "int4",
+        "nullable": true,
+        "default": "0",
+        "constraints": ["CHECK (health_score IS NULL OR health_score >= 0 AND health_score <= 100)"]
+      }
+    },
+    "verified_fields_jsonb": {
+      "type": "object",
+      "default": {},
+      "additionalProperties": { "$ref": "#/$defs/verified_field_entry" },
+      "x-pg": {
+        "ordinal_position": 58,
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "nullable": false,
+        "default": "'{}'::jsonb",
+        "constraints": ["NOT NULL"]
+      }
+    },
+    "changelog_jsonb": {
+      "type": "array",
+      "default": [],
+      "items": { "$ref": "#/$defs/changelog_entry" },
+      "x-pg": {
+        "ordinal_position": 59,
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "nullable": false,
+        "default": "'[]'::jsonb",
+        "constraints": ["NOT NULL"]
+      }
+    },
+    "last_sync_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "x-pg": {
+        "ordinal_position": 60,
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "target_fields": {
+      "type": "array",
+      "default": [],
+      "items": { "type": "string" },
+      "x-pg": {
+        "ordinal_position": 61,
+        "data_type": "ARRAY",
+        "udt_name": "_text",
+        "nullable": false,
+        "default": "'{}'::text[]",
+        "constraints": ["NOT NULL"]
+      }
+    },
+    "social_media": {
+      "type": "array",
+      "default": [],
+      "items": { "$ref": "#/$defs/social_media_item" },
+      "x-pg": {
+        "ordinal_position": 62,
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "nullable": false,
+        "default": "'[]'::jsonb",
+        "constraints": ["NOT NULL"],
+        "pg_description": "Social pages: array of {platform: facebook|instagram|x|linkedin|youtube|tiktok|whatsapp|other, url, handle, ownership: institution|affiliate|parent|sister|community, verified, source_url, notes, observed_at, lane}. Dedupe on canonicalised url. Schema suggestion #48; tier tag = social."
+      }
+    },
+    "corpus_sources": {
+      "type": "array",
+      "default": [],
+      "items": { "$ref": "#/$defs/corpus_source_item" },
+      "x-pg": {
+        "ordinal_position": 63,
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "nullable": false,
+        "default": "'[]'::jsonb",
+        "constraints": ["NOT NULL"],
+        "pg_description": "Regulator/registry evidence: array of {corpus: tveta|cue|kuccps|kmtc|nita|cdacc|other, reg_no, record_ref (e.g. records.jsonl:461), note, observed_at}. Tier tag = corpus. Schema suggestion #49."
+      }
+    },
+    "institution_sources": {
+      "type": "array",
+      "default": [],
+      "items": { "$ref": "#/$defs/institution_source_item" },
+      "x-pg": {
+        "ordinal_position": 64,
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "nullable": false,
+        "default": "'[]'::jsonb",
+        "constraints": ["NOT NULL"],
+        "pg_description": "Institution-owned/affiliated links: array of {url, owner: own|parent|affiliate|sister, relationship_text, source_url, observed_at}. Tier tag = institution. Schema suggestion #49."
+      }
+    },
+    "other_sources": {
+      "type": "array",
+      "default": [],
+      "items": { "$ref": "#/$defs/other_source_item" },
+      "x-pg": {
+        "ordinal_position": 65,
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "nullable": false,
+        "default": "'[]'::jsonb",
+        "constraints": ["NOT NULL"],
+        "pg_description": "Third-party sources: array of {url, publisher, kind: editorial|directory|archive|social_community|other, independent (bool), note, observed_at}. Tier tag = other. Schema suggestion #49."
+      }
+    },
+    "geo": {
+      "$ref": "#/$defs/geo_object",
+      "default": {},
+      "x-pg": {
+        "ordinal_position": 66,
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "nullable": false,
+        "default": "'{}'::jsonb",
+        "constraints": ["NOT NULL"],
+        "pg_description": "Google Maps / place grounding evidence: {maps_url, place_id, plus_code, lat, lng, formatted_address, business_status: operational|closed_temporarily|closed_permanently|unknown, source_url, observed_at, lane: research|verification|sync|system}. Corroborating evidence ONLY: never overwrites or clears location/town/county; never derived from the institution name. Schema suggestion #51."
+      }
+    },
+    "prefetch_status": {
+      "type": ["string", "null"],
+      "enum": ["pending", "packaged", "failed", null],
+      "default": "pending",
+      "x-pg": {
+        "ordinal_position": 67,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": true,
+        "default": "'pending'::text"
+      }
+    },
+    "evidence_prefetched_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "x-pg": {
+        "ordinal_position": 68,
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "evidence_packaged_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "x-pg": {
+        "ordinal_position": 69,
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "nullable": true,
+        "default": null
+      }
+    },
+    "prefetch_error": {
+      "type": ["string", "null"],
+      "x-pg": {
+        "ordinal_position": 70,
+        "data_type": "text",
+        "udt_name": "text",
+        "nullable": true,
+        "default": null
+      }
+    }
+  },
+  "allOf": [
+    {
+      "description": "chk_institutions_verified_needs_sync: verified rows cannot have sync_status in pending/held/conflict",
+      "if": {
+        "properties": { "verification_status": { "const": "verified" } }
+      },
+      "then": {
+        "properties": { "sync_status": { "not": { "enum": ["pending", "held", "conflict"] } } }
+      }
+    },
+    {
+      "description": "Category is required (NP|TVC|VTC) when type is TVET and must be null for UNIVERSITY/KMTC",
+      "if": {
+        "properties": { "type": { "const": "TVET" } }
+      },
+      "then": {
+        "properties": { "category": { "enum": ["NP", "TVC", "VTC"] } }
+      },
+      "else": {
+        "properties": { "category": { "type": "null" } }
+      }
+    }
+  ]
+}
